@@ -1,30 +1,45 @@
-# The phenomenon
+# The Melting Tower
 
-<!-- This is the SD5913 assignment 2 template. Everything in this file is yours to
-replace, and the check counts words: comments like this one are not words, so
-delete each one as you write. Start with the heading: name the phenomenon.
+![the finished, settled tower](out/tower.png)
 
-Then, in this order, at least 150 words in total.
-
-New to folders, paths, or the files here whose names start with a dot? Read
-https://github.com/sd5913/pfad/blob/2026/reference/files.md first. Ten minutes. -->
-
-![what the picture is](out/plot.png)
+![the tower building itself, year by year](out/tower.gif)
 
 ## The phenomenon
 
-<!-- What goes up and down, and why you looked at it. -->
+Every year since 1956, scientists have measured how much mass a set of "reference"
+glaciers around the world have gained or lost, and added that number to a running
+total. The total only ever goes down: by 2023 it had fallen from 0 to almost -30
+metres of water equivalent. This project takes that one number, year by year, and
+draws it as a tower built brick by brick, where each year's data physically
+determines how the tower stands: how far it leans, how deep the bite taken out of
+its base is, how dark that brick is, and how hard the whole structure shudders when
+it lands.
 
 ## The source
 
-<!-- A link to the page or endpoint the file came from, and one line on what is in
-the file: how many rows, what a row means, what the units are. -->
+[World Glacier Monitoring Service reference-glacier mass balance record, mirrored
+by datasets/glacier-mass-balance](https://raw.githubusercontent.com/datasets/glacier-mass-balance/master/data/glaciers.csv),
+itself republished from the US EPA's "Climate Change Indicators" series. The file
+has 68 rows, one per year from 1956 to 2023, with the year, the cumulative mean
+mass balance in metres of water equivalent, and the number of glaciers observed
+that year.
 
 ## What the picture shows
 
-<!-- Two or three sentences. Including what it hides: every transformation throws
-something away, and naming what yours threw away is the easiest way to sound like
-you know what you did. -->
+Every brick's position comes directly from its row: how far it leans is that
+year's *cumulative* loss; the bite out of its base and its color are both that
+year's *own* loss (cumulative[i] − cumulative[i-1]); the shake when it lands uses
+the same annual-loss number as its amplitude. Nothing about the shape is
+decorative — it is what "foundation pulled out from under it" looks like when
+every pull is an actual measurement.
+
+What it hides: the lean's scale (how many brick-widths per metre of water
+equivalent) is an artistic choice, not a physical unit conversion. These are
+*reference* glaciers, a monitored subset chosen for having long, continuous
+records — not every glacier on Earth. And the number of glaciers observed climbs
+from 12 in the 1950s to over 60 by the 2020s, so part of why the early decades
+look calmer is that fewer glaciers were being watched, not necessarily that less
+was happening.
 
 ## Run it
 
