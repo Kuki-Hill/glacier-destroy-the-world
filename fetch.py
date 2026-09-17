@@ -4,24 +4,25 @@
 # ///
 
 """
-Fetch the numbers once, save the raw reply to data/, and never fetch again.
+Fetch the world's reference-glacier mass balance record once, save the raw
+reply to data/, and never fetch again.
 
     uv run fetch.py
 
-Change URL and FILE. The default is the Hong Kong Observatory's daily mean
-temperature for 2026, so the template runs before you have touched it and you
-can see what a file looks like when it arrives. It is an example, not your
-phenomenon: handing it in unchanged is handing in nothing.
+The World Glacier Monitoring Service (WGMS) has tracked a set of "reference"
+glaciers around the world every year since the 1950s and published, for each
+year, how much mass they have lost or gained on average, added up since the
+first year of the record. The US EPA republishes that record as a plain CSV
+for its climate change indicators; this is the copy this project reads.
 """
 
 from pathlib import Path
 
 import requests
 
-URL = ("https://data.weather.gov.hk/weatherAPI/opendata/opendata.php"
-       "?dataType=CLMTEMP&rformat=csv&station=HKO&year=2026")      # CHANGE ME
-FILE = "hko-daily-mean-temperature-2026.csv"                          # CHANGE ME: say what it is,
-                                                                      # keep the publisher's extension
+URL = "https://raw.githubusercontent.com/datasets/glacier-mass-balance/master/data/glaciers.csv"
+FILE = "glacier-mass-balance-reference-glaciers.csv"
+
 HERE = Path(__file__).parent
 DATA = HERE / "data"
 
