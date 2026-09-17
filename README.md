@@ -31,7 +31,11 @@ year's *cumulative* loss; the bite out of its base and its color are both that
 year's *own* loss (cumulative[i] − cumulative[i-1]); the shake when it lands uses
 the same annual-loss number as its amplitude. Nothing about the shape is
 decorative — it is what "foundation pulled out from under it" looks like when
-every pull is an actual measurement.
+every pull is an actual measurement. It is rendered as solid, lit blocks floating
+in a dark void with the camera slowly turning around them, rather than as a flat
+chart with axes and gridlines, because the tower is meant to be looked at as a
+structure, not read as a plot — but the camera turn and the void are staging: they
+show the same numbers from more angles, and add or hide none of them.
 
 What it hides: the lean's scale (how many brick-widths per metre of water
 equivalent) is an artistic choice, not a physical unit conversion. These are

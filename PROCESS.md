@@ -46,6 +46,19 @@ fairly steadily, from the 1980s onward. That is the number that now drives the
 shake amplitude — the same number already driving each brick's notch width and
 color, reused rather than inventing a fourth signal.
 
+**The first render, and why I rejected it.** The first working version rendered
+the tower as a flat 2D matplotlib chart — rectangles on an x/y axis with tick
+labels and a title, colored by severity. Once I saw it, it read exactly like a
+scientific plot, not a piece of art — a research-report look, not the "cool,"
+spatial, three-dimensional object I actually wanted. I rejected that rendering
+outright and asked for a genuinely spatial, three-dimensional structure instead,
+still built strictly from the same numbers. The fix was to switch from flat
+rectangles on a 2D chart axis to real solid 3D blocks (`bar3d`), drop every piece
+of chart chrome (axes, ticks, gridlines, labels), put the tower in a dark void
+instead of a light chart surface, and slowly rotate the camera around it over the
+course of the animation. None of the data mappings (lean, notch, color, shake)
+changed — only how the same numbers get drawn.
+
 ## Kept
 
 - The literal, one-to-one mapping from CSV numbers to every visual property of
@@ -66,3 +79,6 @@ color, reused rather than inventing a fourth signal.
 - The acceleration-based shake hypothesis — checked against the real CSV by
   decade and found not to climb over time the way the concept needed it to, so
   it was thrown away in favor of the plain annual-loss version, which does.
+- The first, flat 2D chart-style render — it looked like a research plot instead
+  of an artwork, so it was discarded in favor of the solid, rotating 3D version,
+  with every data-to-geometry mapping carried over unchanged.

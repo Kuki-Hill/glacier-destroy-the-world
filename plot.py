@@ -5,18 +5,20 @@
 
 """
 Read data/glacier-mass-balance-reference-glaciers.csv, build a tower one brick
-per year, and save an animation of it losing its footing to out/.
+per year in real 3D space, and save an animation of it losing its footing to
+out/.
 
     uv run plot.py
 
-Every visual property of every brick comes from that year's own row - nothing
-is decorative:
+Every geometric property of every brick still comes from that year's own row -
+switching from a flat chart to a solid, lit, rotating structure changed nothing
+about what drives the shape:
 
   lean (how far the brick sits from the vertical)  <- that year's CUMULATIVE
                                                         mass balance
-  notch (how much is bitten out of its base edge)  <- that year's OWN loss,
-                                                        cumulative[i]-cumulative[i-1]
-  color (how dark the brick is)                    <- the same annual loss,
+  notch (how much is bitten out of its base edge,  <- that year's OWN loss,
+         shrinking the block and shifting it out)      cumulative[i]-cumulative[i-1]
+  color (how pale-to-deep blue the block glows)     <- the same annual loss,
                                                         as a fraction of the
                                                         worst year on record
   shake (how hard the whole tower shudders when     <- the same annual loss
@@ -31,15 +33,19 @@ it. An earlier hypothesis - shake driven by year-over-year *acceleration* of
 melt - was checked the same way and rejected: its decade averages do not climb
 (peak decade average is the 1960s, peak single year is 1987), so it would have
 been decorating a claim the numbers don't support.
+
+The slow camera rotation and the dark void it floats in are pure staging - they
+show the same numbers from more angles, they do not add or hide any of them.
 """
 
 import csv
+import math
 from pathlib import Path
 
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation, PillowWriter
 from matplotlib.colors import LinearSegmentedColormap
-from matplotlib.patches import Rectangle
+from mpl_toolkits.mplot3d import Axes3D  # noqa: F401 - registers the 3d projection
 
 FILE = "glacier-mass-balance-reference-glaciers.csv"
 GIF = "tower.gif"
@@ -55,17 +61,18 @@ BLUE_RAMP = [
     "#cde2fb", "#b7d3f6", "#9ec5f4", "#86b6ef", "#6da7ec", "#5598e7",
     "#3987e5", "#2a78d6", "#256abf", "#1c5cab", "#184f95", "#104281", "#0d366b",
 ]
-SURFACE = "#fcfcfb"
-INK = "#0b0b0b"
-MUTED = "#898781"
-GRID = "#e1e0d9"
+VOID = "#05070a"       # the dark space the tower stands in - not a chart surface
+INK = "#c7d3e8"        # cool, muted label color, legible on the void
 
 BRICK_W = 1.0
+BRICK_D = 1.2           # depth: bricks are solid blocks, not flat panels
 BRICK_H = 1.0
 MAX_LEAN = 4.0          # brick-widths the tower leans at its worst year - an artistic scale, not a unit conversion
 NOTCH_MAX_FRAC = 0.75   # largest bite, as a fraction of a brick's width
-FRAMES_PER_YEAR = 4
+FRAMES_PER_YEAR = 3
 SHAKE_MAX = 0.45        # brick-widths of sway at the top brick, at the worst year's severity
+TURNS = 1.0             # full camera revolutions over the whole animation - staging, not data
+ELEV = 16
 
 
 def rows(path):
@@ -80,52 +87,67 @@ def rows(path):
 
 
 def brick(i, cum, prev_cum, max_abs_cum, max_abs_delta):
-    """One year's brick: where it sits, how bitten it is, how dark it is."""
+    """One year's block: where it sits, how bitten it is, how it glows."""
     lean = abs(cum) / max_abs_cum * MAX_LEAN
     delta = cum - prev_cum
     severity = abs(delta) / max_abs_delta if max_abs_delta else 0.0
     notch = severity * NOTCH_MAX_FRAC * BRICK_W
     x_right = lean + BRICK_W
     x_left = x_right - (BRICK_W - notch)
-    y_bottom = i * BRICK_H
     return {
         "x_left": x_left, "width": x_right - x_left,
-        "y_bottom": y_bottom, "severity": severity, "lean": lean,
+        "z_bottom": i * BRICK_H, "severity": severity, "lean": lean,
     }
 
 
-def draw_tower(ax, bricks, cmap, x_offsets=None):
-    """Draw every brick in `bricks`, each nudged sideways by x_offsets[i] (or 0)."""
+def draw_tower(ax, bricks, cmap, azim, x_offsets=None):
+    """Draw every block in `bricks` as a solid 3D box, nudged sideways by
+    x_offsets[i] (or 0), floating in a dark void with no chart chrome."""
     ax.clear()
     for i, b in enumerate(bricks):
         dx = x_offsets[i] if x_offsets else 0.0
-        ax.add_patch(Rectangle(
-            (b["x_left"] + dx, b["y_bottom"]), b["width"], BRICK_H,
-            facecolor=cmap(b["severity"]), edgecolor=INK, linewidth=0.4, alpha=0.95,
-        ))
+        ax.bar3d(
+            b["x_left"] + dx, -BRICK_D / 2, b["z_bottom"],
+            b["width"], BRICK_D, BRICK_H,
+            color=cmap(b["severity"]), edgecolor=VOID, linewidth=0.3,
+            shade=True,
+        )
+
     top = len(bricks)
+    lean_now = bricks[-1]["lean"] + bricks[-1]["width"]
+    shadow = plt.matplotlib.patches.Ellipse(
+        (lean_now / 2, 0), lean_now + BRICK_W, BRICK_D * 1.4,
+        facecolor="#0a0e16", alpha=0.6, zorder=-1,
+    )
+    ax.add_patch(shadow)
+    from mpl_toolkits.mplot3d import art3d
+    art3d.pathpatch_2d_to_3d(shadow, z=0, zdir="z")
+
     ax.set_xlim(-1.5, MAX_LEAN + BRICK_W + 1.5)
-    ax.set_ylim(0, max(top, 1) + 1)
-    ax.set_facecolor(SURFACE)
-    ax.set_xlabel("instability - brick-widths leaned off vertical", color=MUTED)
-    ax.set_ylabel("year built (1956 at the base)", color=MUTED)
-    ax.tick_params(colors=MUTED)
-    for spine in ax.spines.values():
-        spine.set_color(GRID)
-    ax.axvline(0, color=MUTED, linewidth=0.8, linestyle=":")
+    ax.set_ylim(-3, 3)
+    ax.set_zlim(0, max(top, 1) + 1)
+    ax.set_box_aspect((1, 0.6, 2.2))
+    ax.view_init(elev=ELEV, azim=azim)
+    ax.dist = 8.3
+    ax.set_axis_off()
+    ax.set_facecolor(VOID)
+    ax.patch.set_facecolor(VOID)
+    ax.patch.set_alpha(1.0)
+    fig = ax.figure
+    fig.patch.set_facecolor(VOID)
+    ax.set_position([-0.08, -0.03, 1.16, 1.08])
 
 
 def shake_offsets(top_index, severity, frac):
-    """Sideways nudge for every brick 0..top_index, this sub-frame.
+    """Sideways nudge for every block 0..top_index, this sub-frame.
 
     Amplitude comes from `severity` (that year's annual loss, real data).
-    Higher bricks sway more (height_frac); the wobble decays across the
+    Higher blocks sway more (height_frac); the wobble decays across the
     year's sub-frames (frac: 1.0 -> 0.0) so the tower settles before the
-    next brick lands. The decay curve and the fact that height amplifies
+    next block lands. The decay curve and the fact that height amplifies
     sway are artistic structure layered on a data-driven amplitude - the
     README says so.
     """
-    import math
     offsets = []
     for j in range(top_index + 1):
         height_frac = j / top_index if top_index else 1.0
@@ -153,20 +175,22 @@ def main():
 
     OUT.mkdir(exist_ok=True)
 
-    # still frame: the finished, settled tower
-    fig, ax = plt.subplots(figsize=(6, 9))
-    fig.patch.set_facecolor(SURFACE)
-    draw_tower(ax, bricks, cmap)
-    ax.set_title(f"The Melting Tower - {years[0]}-{years[-1]} reference-glacier mass balance", color=INK)
-    fig.tight_layout()
-    fig.savefig(OUT / PICTURE, dpi=150, facecolor=SURFACE)
+    # still frame: the finished, settled tower, camera angle chosen to show the lean
+    fig = plt.figure(figsize=(7, 9))
+    ax = fig.add_subplot(projection="3d")
+    draw_tower(ax, bricks, cmap, azim=-55)
+    fig.text(0.06, 0.95, f"The Melting Tower  ({years[0]}-{years[-1]})",
+              color=INK, fontsize=13, family="sans-serif")
+    fig.savefig(OUT / PICTURE, dpi=150, facecolor=VOID)
     print(f"saved out/{PICTURE}")
     plt.close(fig)
 
-    # animation: brick by brick, each landing shakes the tower so far
-    fig, ax = plt.subplots(figsize=(6, 9))
-    fig.patch.set_facecolor(SURFACE)
+    # animation: block by block, each landing shakes the tower so far; camera turns throughout
+    fig = plt.figure(figsize=(7, 9))
+    ax = fig.add_subplot(projection="3d")
     total_frames = len(bricks) * FRAMES_PER_YEAR
+    azim_start = -55
+    label = fig.text(0.06, 0.95, "", color=INK, fontsize=13, family="sans-serif")
 
     def frame(f):
         year_i = f // FRAMES_PER_YEAR
@@ -174,9 +198,9 @@ def main():
         shown = bricks[:year_i + 1]
         decay = 1.0 - sub / FRAMES_PER_YEAR
         offsets = shake_offsets(year_i, shown[-1]["severity"], decay)
-        draw_tower(ax, shown, cmap, offsets)
-        ax.set_title(f"The Melting Tower - year {years[year_i]}", color=INK)
-        fig.tight_layout()
+        azim = azim_start + 360 * TURNS * f / total_frames
+        draw_tower(ax, shown, cmap, azim, offsets)
+        label.set_text(f"The Melting Tower  -  {years[year_i]}")
 
     anim = FuncAnimation(fig, frame, frames=total_frames, interval=1000 / 12)
     anim.save(OUT / GIF, writer=PillowWriter(fps=12))
